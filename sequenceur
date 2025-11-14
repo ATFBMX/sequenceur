@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Séquenceur Live - Presets & Record</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #eee;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+        }
+        
+        .container {
+            max-width: 1400px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        
+        .controls {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        button {
+            padding: 14px 28px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+            min-width: 120px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        button.play { background: #4CAF50; color: white; }
+        button.stop { background: #f44336; color: white; }
+        button.record { background: #9C27B0; color: white; }
+        button.preset { background: #FF9800; color: white; }
+        button.delete { background: #757575; color: white; }
+        
+        button.recording {
+            background: #f44336;
+            animation: blink 0.5s infinite;
+        }
+        
+        @keyframes blink {
+            50% { opacity: 0.5; transform: scale(0.95); }
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+        
+        .tempo-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #333;
+            padding: 10px 15px;
+            border-radius: 5px;
+        }
+        
+        input[type="range"] {
+            width: 120px;
+        }
+        
+        .preset-section {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .preset-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        input[type="text"] {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background: #333;
+            color: #eee;
+            font-size: 14px;
+            min-width: 200px;
+        }
+        
+        select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background: #333;
+            color: #eee;
+            font-size: 14px;
+            min-width: 200px;
+        }
+        
+        .synth-panel {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .module {
+            background: #333;
+            border-radius: 5px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .module h3 {
+            margin-top: 0;
+            color: #4CAF50;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+            font-size: 16px;
+        }
+        
+        .control-group {
+            display: inline-block;
+            margin: 8px 12px 8px 0;
+        }
+        
+        .control-group label {
+            display: block;
+            font-size: 11px;
+            margin-bottom: 3px;
+            color: #aaa;
+        }
+        
+        .control-group input[type="range"] {
+            width: 90px;
+            display: block;
+        }
+        
+        .control-group select {
+            width: 90px;
+            padding: 5px;
+            border-radius: 3px;
+            border: 1px solid #555;
+            background: #444;
+            color: #eee;
+        }
+        
+        .track {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 6px;
+            background: #333;
+            border-radius: 5px;
+        }
+        
+        .track-label {
+            width: 90px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .track-label.synth1 { color: #2196F3; }
+        .track-label.synth2 { color: #00BCD4; }
+        .track-label.kick { color: #FF5722; }
+        .track-label.snare { color: #FFC107; }
+        .track-label.hihat { color: #9C27B0; }
+        .track-label.perc { color: #8BC34A; }
+        .track-label.audio { color: #FF9800; }
+        
+        .step {
+            width: 32px;
+            height: 32px;
+            margin: 0 1px;
+            background: #444;
+            border: 2px solid #555;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s;
+        }
+        
+        .step.active {
+            background: #4CAF50;
+            border-color: #66BB6A;
+        }
+        
+        .step.playing {
+            background: #FFEB3B !important;
+            border-color: #FFEB3B;
+            animation: pulse 0.15s;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: auto;
+        }
+        
+        .volume-control label {
+            font-size: 10px;
+            color: #aaa;
+        }
+        
+        .volume-control input[type="range"] {
+            width: 60px;
+        }
+        
+        .sequencer {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .audio-track-panel {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            background: #333;
+            border-radius: 5px;
+            border: 1px solid #555;
+            color: #eee;
+            width: 100%;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 10px;
+            background: #333;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎛️ Séquenceur LIVE - Presets & Record</h1>
+        
+        <div class="controls">
+            <button class="play" id="playBtn">▶ PLAY</button>
+            <button class="stop" id="stopBtn">⏹ STOP</button>
+            <button class="record" id="recordBtn">⏺ RECORD</button>
+            
+            <div class="tempo-control">
+                <label>Tempo:</label>
+                <input type="range" id="tempoSlider" min="60" max="180" value="120">
+                <span id="tempoValue">120</span> BPM
+            </div>
+        </div>
+        
+        <div class="preset-section">
+            <h2 style="margin-top: 0; color: #FF9800;">⚡ Gestion des Presets</h2>
+            <div class="preset-controls">
+                <input type="text" id="presetName" placeholder="Nom du preset...">
+                <button class="preset" id="savePresetBtn">💾 SAUVER</button>
+                <select id="presetList">
+                    <option value="">-- Charger un preset --</option>
+                </select>
+                <button class="preset" id="loadPresetBtn">📂 CHARGER</button>
+                <button class="delete" id="deletePresetBtn">🗑️ SUPPRIMER</button>
+            </div>
+        </div>
+        
+        <div class="synth-panel">
+            <h2>🎹 Synthétiseur 1</h2>
+            <div class="module">
+                <div class="control-group">
+                    <label>Forme d'onde</label>
+                    <select id="synth1OscType">
+                        <option value="sawtooth" selected>Sawtooth</option>
+                        <option value="square">Square</option>
+                        <option value="sine">Sine</option>
+                        <option value="triangle">Triangle</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Fréquence</label>
+                    <input type="range" id="synth1Freq" min="110" max="880" value="220">
+                </div>
+                <div class="control-group">
+                    <label>Attack</label>
+                    <input type="range" id="synth1Attack" min="0.01" max="1" value="0.1" step="0.01">
+                </div>
+                <div class="control-group">
+                    <label>Release</label>
+                    <input type="range" id="synth1Release" min="0.1" max="2" value="0.5" step="0.1">
+                </div>
+            </div>
+        </div>
+        
+        <div class="synth-panel">
+            <h2>🎹 Synthétiseur 2</h2>
+            <div class="module">
+                <div class="control-group">
+                    <label>Forme d'onde</label>
+                    <select id="synth2OscType">
+                        <option value="square" selected>Square</option>
+                        <option value="sawtooth">Sawtooth</option>
+                        <option value="sine">Sine</option>
+                        <option value="triangle">Triangle</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Fréquence</label>
+                    <input type="range" id="synth2Freq" min="220" max="1760" value="440">
+                </div>
+                <div class="control-group">
+                    <label>Attack</label>
+                    <input type="range" id="synth2Attack" min="0.01" max="1" value="0.05" step="0.01">
+                </div>
+                <div class="control-group">
+                    <label>Release</label>
+                    <input type="range" id="synth2Release" min="0.05" max="1" value="0.3" step="0.05">
+                </div>
+            </div>
+        </div>
+        
+        <div class="audio-track-panel">
+            <h2>🎵 Piste Audio (Piste 7)</h2>
+            <input type="file" id="audioFile" accept="audio/*">
+            <p style="font-size: 12px; color: #aaa;">Chargez un sample audio à déclencher sur la grille</p>
+        </div>
+        
+        <div class="sequencer" id="sequencer"></div>
+        
+        <div id="status" class="status">Prêt - AudioContext activé</div>
+    </div>
+
+    <script>
+        // Configuration
+        const STEPS = 16;
+        const TRACKS = 7;
+        const TRACK_NAMES = ['Synth 1', 'Synth 2', 'Kick', 'Snare', 'HiHat', 'Perc', 'Audio'];
+        
+        // État du séquenceur
+        let audioContext;
+        let masterGain;
+        let isPlaying = false;
+        let isRecording = false;
+        let mediaRecorder;
+        let recordedChunks = [];
+        let currentStep = 0;
+        let tempo = 120;
+        let nextStepTime = 0;
+        let steps = Array(TRACKS).fill().map(() => Array(STEPS).fill(false));
+        let sampleBuffer = null;
+        let mediaStreamDest = null;
+        
+        // Éléments du DOM
+        const playBtn = document.getElementById('playBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const recordBtn = document.getElementById('recordBtn');
+        const tempoSlider = document.getElementById('tempoSlider');
+        const tempoValue = document.getElementById('tempoValue');
+        const sequencer = document.getElementById('sequencer');
+        const audioFileInput = document.getElementById('audioFile');
+        const presetNameInput = document.getElementById('presetName');
+        const presetList = document.getElementById('presetList');
+        const savePresetBtn = document.getElementById('savePresetBtn');
+        const loadPresetBtn = document.getElementById('loadPresetBtn');
+        const deletePresetBtn = document.getElementById('deletePresetBtn');
+        const status = document.getElementById('status');
+        
+        // Initialisation
+        function init() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Création du masterGain pour le routage
+            masterGain = audioContext.createGain();
+            masterGain.connect(audioContext.destination);
+            masterGain.gain.value = 1;
+            
+            // Création de l'interface
+            createSequencerUI();
+            loadPresetsList();
+            
+            // Événements
+            playBtn.addEventListener('click', togglePlay);
+            stopBtn.addEventListener('click', stop);
+            recordBtn.addEventListener('click', toggleRecord);
+            tempoSlider.addEventListener('input', (e) => {
+                tempo = parseInt(e.target.value);
+                tempoValue.textContent = tempo;
+            });
+            audioFileInput.addEventListener('change', handleFileLoad);
+            savePresetBtn.addEventListener('click', savePreset);
+            loadPresetBtn.addEventListener('click', loadSelectedPreset);
+            deletePresetBtn.addEventListener('click', deleteSelectedPreset);
+            
+            updateStatus('Séquenceur prêt - Cliquez pour activer l\'audio');
+        }
+        
+        // Création de l'interface
+        function createSequencerUI() {
+            for (let track = 0; track < TRACKS; track++) {
+                const trackDiv = document.createElement('div');
+                trackDiv.className = 'track';
+                
+                const label = document.createElement('div');
+                label.className = `track-label ${getTrackClass(track)}`;
+                label.textContent = TRACK_NAMES[track];
+                trackDiv.appendChild(label);
+                
+                for (let step = 0; step < STEPS; step++) {
+                    const stepDiv = document.createElement('div');
+                    stepDiv.className = 'step';
+                    stepDiv.dataset.track = track;
+                    stepDiv.dataset.step = step;
+                    stepDiv.addEventListener('click', () => toggleStep(track, step, stepDiv));
+                    trackDiv.appendChild(stepDiv);
+                }
+                
+                const volumeControl = document.createElement('div');
+                volumeControl.className = 'volume-control';
+                volumeControl.innerHTML = `
+                    <label>Vol</label>
+                    <input type="range" min="0" max="100" value="80" data-track="${track}">
+                `;
+                trackDiv.appendChild(volumeControl);
+                sequencer.appendChild(trackDiv);
+            }
+        }
+        
+        function getTrackClass(track) {
+            const classes = ['synth1', 'synth2', 'kick', 'snare', 'hihat', 'perc', 'audio'];
+            return classes[track];
+        }
+        
+        function toggleStep(track, step, element) {
+            steps[track][step] = !steps[track][step];
+            element.classList.toggle('active', steps[track][step]);
+        }
+        
+        function handleFileLoad(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                audioContext.decodeAudioData(e.target.result, (buffer) => {
+                    sampleBuffer = buffer;
+                    updateStatus('✅ Sample chargé !');
+                }, (error) => {
+                    updateStatus('❌ Erreur de chargement du sample');
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        // Contrôles de lecture
+        function togglePlay() {
+            if (isPlaying) {
+                pause();
+            } else {
+                play();
+            }
+        }
+        
+        function play() {
+            isPlaying = true;
+            playBtn.textContent = '⏸ PAUSE';
+            currentStep = 0;
+            nextStepTime = audioContext.currentTime;
+            scheduler();
+            updateStatus('▶️ Lecture en cours...');
+        }
+        
+        function pause() {
+            isPlaying = false;
+            playBtn.textContent = '▶ PLAY';
+            updateStatus('⏸️ Pause');
+        }
+        
+        function stop() {
+            isPlaying = false;
+            playBtn.textContent = '▶ PLAY';
+            currentStep = 0;
+            clearHighlight();
+            updateStatus('⏹️ Arrêté');
+        }
+        
+        // Enregistrement audio
+        function toggleRecord() {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        }
+        
+        function startRecording() {
+            try {
+                // Créer une destination pour l'enregistrement
+                mediaStreamDest = audioContext.createMediaStreamDestination();
+                masterGain.connect(mediaStreamDest);
+                
+                mediaRecorder = new MediaRecorder(mediaStreamDest.stream);
+                recordedChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) recordedChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `enregistrement_${Date.now()}.webm`;
+                    a.click();
+                    updateStatus('✅ Enregistrement téléchargé !');
+                    
+                    // Nettoyage
+                    if (mediaStreamDest) {
+                        masterGain.disconnect(mediaStreamDest);
+                        mediaStreamDest = null;
+                    }
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                recordBtn.textContent = '⏹ STOP REC';
+                recordBtn.classList.add('recording');
+                updateStatus('🔴 ENREGISTREMENT EN COURS...');
+                
+            } catch (error) {
+                updateStatus('❌ Erreur d\'enregistrement');
+                console.error(error);
+            }
+        }
+        
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                recordBtn.textContent = '⏺ RECORD';
+                recordBtn.classList.remove('recording');
+            }
+        }
+        
+        // Presets
+        function savePreset() {
+            const name = presetNameInput.value.trim();
+            if (!name) {
+                updateStatus('❌ Entrez un nom pour le preset');
+                return;
+            }
+            
+            const preset = {
+                name: name,
+                steps: JSON.parse(JSON.stringify(steps)),
+                tempo: tempo,
+                // Synth 1
+                synth1OscType: document.getElementById('synth1OscType').value,
+                synth1Freq: document.getElementById('synth1Freq').value,
+                synth1Attack: document.getElementById('synth1Attack').value,
+                synth1Release: document.getElementById('synth1Release').value,
+                // Synth 2
+                synth2OscType: document.getElementById('synth2OscType').value,
+                synth2Freq: document.getElementById('synth2Freq').value,
+                synth2Attack: document.getElementById('synth2Attack').value,
+                synth2Release: document.getElementById('synth2Release').value,
+                // Volumes
+                trackVolumes: Array.from({length: TRACKS}, (_, i) => 
+                    document.querySelector(`input[data-track="${i}"]`).value
+                )
+            };
+            
+            let presets = JSON.parse(localStorage.getItem('sequencerPresets') || '[]');
+            
+            // Supprimer ancien preset avec même nom
+            presets = presets.filter(p => p.name !== name);
+            presets.push(preset);
+            
+            localStorage.setItem('sequencerPresets', JSON.stringify(presets));
+            presetNameInput.value = '';
+            loadPresetsList();
+            updateStatus(`✅ Preset "${name}" sauvegardé !`);
+        }
+        
+        function loadPresetsList() {
+            const presets = JSON.parse(localStorage.getItem('sequencerPresets') || '[]');
+            presetList.innerHTML = '<option value="">-- Charger un preset --</option>';
+            presets.forEach(preset => {
+                const option = document.createElement('option');
+                option.value = preset.name;
+                option.textContent = preset.name;
+                presetList.appendChild(option);
+            });
+        }
+        
+        function loadSelectedPreset() {
+            const name = presetList.value;
+            if (!name) return;
+            
+            const presets = JSON.parse(localStorage.getItem('sequencerPresets') || '[]');
+            const preset = presets.find(p => p.name === name);
+            
+            if (!preset) {
+                updateStatus('❌ Preset introuvable');
+                return;
+            }
+            
+            // Charger la grille
+            steps = JSON.parse(JSON.stringify(preset.steps));
+            
+            // Mettre à jour l'UI
+            for (let track = 0; track < TRACKS; track++) {
+                for (let step = 0; step < STEPS; step++) {
+                    const stepEl = document.querySelector(`[data-track="${track}"][data-step="${step}"]`);
+                    stepEl.classList.toggle('active', steps[track][step]);
+                }
+            }
+            
+            // Charger les paramètres
+            tempo = preset.tempo;
+            tempoSlider.value = tempo;
+            tempoValue.textContent = tempo;
+            
+            // Synth 1
+            document.getElementById('synth1OscType').value = preset.synth1OscType;
+            document.getElementById('synth1Freq').value = preset.synth1Freq;
+            document.getElementById('synth1Attack').value = preset.synth1Attack;
+            document.getElementById('synth1Release').value = preset.synth1Release;
+            
+            // Synth 2
+            document.getElementById('synth2OscType').value = preset.synth2OscType;
+            document.getElementById('synth2Freq').value = preset.synth2Freq;
+            document.getElementById('synth2Attack').value = preset.synth2Attack;
+            document.getElementById('synth2Release').value = preset.synth2Release;
+            
+            // Volumes
+            preset.trackVolumes.forEach((vol, i) => {
+                const slider = document.querySelector(`input[data-track="${i}"]`);
+                if (slider) slider.value = vol;
+            });
+            
+            updateStatus(`📂 Preset "${name}" chargé !`);
+        }
+        
+        function deleteSelectedPreset() {
+            const name = presetList.value;
+            if (!name) return;
+            
+            if (!confirm(`Supprimer le preset "${name}" ?`)) return;
+            
+            let presets = JSON.parse(localStorage.getItem('sequencerPresets') || '[]');
+            presets = presets.filter(p => p.name !== name);
+            localStorage.setItem('sequencerPresets', JSON.stringify(presets));
+            
+            loadPresetsList();
+            updateStatus(`🗑️ Preset "${name}" supprimé !`);
+        }
+        
+        // Planification
+        function scheduler() {
+            if (!isPlaying) return;
+            
+            while (nextStepTime < audioContext.currentTime + 0.1) {
+                scheduleStep(currentStep, nextStepTime);
+                nextStep();
+            }
+            
+            setTimeout(scheduler, 25);
+        }
+        
+        function nextStep() {
+            const secondsPerStep = 60.0 / tempo / 4;
+            nextStepTime += secondsPerStep;
+            clearHighlight();
+            highlightStep(currentStep);
+            currentStep = (currentStep + 1) % STEPS;
+        }
+        
+        function scheduleStep(step, time) {
+            for (let track = 0; track < TRACKS; track++) {
+                if (steps[track][step]) {
+                    const volume = document.querySelector(`input[data-track="${track}"]`).value / 100;
+                    
+                    if (track === 0) playSynth1(time, volume);
+                    else if (track === 1) playSynth2(time, volume);
+                    else if (track === 2) playKick(time, volume);
+                    else if (track === 3) playSnare(time, volume);
+                    else if (track === 4) playHihat(time, volume);
+                    else if (track === 5) playPerc(time, volume);
+                    else if (track === 6 && sampleBuffer) playSample(time, volume);
+                }
+            }
+        }
+        
+        // Sons
+        function playSynth1(time, volume) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.type = document.getElementById('synth1OscType').value;
+            osc.frequency.value = parseFloat(document.getElementById('synth1Freq').value);
+            
+            const attack = parseFloat(document.getElementById('synth1Attack').value);
+            const release = parseFloat(document.getElementById('synth1Release').value);
+            
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(volume, time + attack);
+            gain.gain.linearRampToValueAtTime(0, time + attack + release);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            
+            osc.start(time);
+            osc.stop(time + attack + release + 0.1);
+        }
+        
+        function playSynth2(time, volume) {
+            const osc1 = audioContext.createOscillator();
+            const osc2 = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+            
+            osc1.type = document.getElementById('synth2OscType').value;
+            osc1.frequency.value = parseFloat(document.getElementById('synth2Freq').value);
+            
+            osc2.type = 'sine';
+            osc2.frequency.value = parseFloat(document.getElementById('synth2Freq').value) * 2;
+            
+            filter.type = 'lowpass';
+            filter.frequency.value = 2000;
+            
+            const attack = parseFloat(document.getElementById('synth2Attack').value);
+            const release = parseFloat(document.getElementById('synth2Release').value);
+            
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(volume * 0.5, time + attack);
+            gain.gain.linearRampToValueAtTime(0, time + attack + release);
+            
+            osc1.connect(filter);
+            osc2.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+            
+            osc1.start(time);
+            osc2.start(time);
+            osc1.stop(time + attack + release + 0.1);
+            osc2.stop(time + attack + release + 0.1);
+        }
+        
+        function playKick(time, volume) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(150, time);
+            osc.frequency.exponentialRampToValueAtTime(30, time + 0.1);
+            
+            gain.gain.setValueAtTime(volume, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            
+            osc.start(time);
+            osc.stop(time + 0.3);
+        }
+        
+        function playSnare(time, volume) {
+            const noise = audioContext.createBufferSource();
+            const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.2, audioContext.sampleRate);
+            const data = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            noise.buffer = noiseBuffer;
+            
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 1000;
+            
+            const gain = audioContext.createGain();
+            gain.gain.setValueAtTime(volume, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+            
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+            
+            noise.start(time);
+            noise.stop(time + 0.2);
+        }
+        
+        function playHihat(time, volume) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.type = 'square';
+            osc.frequency.value = 800;
+            
+            gain.gain.setValueAtTime(volume * 0.3, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            
+            osc.start(time);
+            osc.stop(time + 0.05);
+        }
+        
+        function playPerc(time, volume) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.type = 'triangle';
+            osc.frequency.value = 300;
+            
+            gain.gain.setValueAtTime(volume, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            
+            osc.start(time);
+            osc.stop(time + 0.1);
+        }
+        
+        function playSample(time, volume) {
+            const source = audioContext.createBufferSource();
+            const gainNode = audioContext.createGain();
+            
+            source.buffer = sampleBuffer;
+            gainNode.gain.value = volume;
+            
+            source.connect(gainNode);
+            gainNode.connect(masterGain);
+            
+            source.start(time);
+        }
+        
+        // UI
+        function highlightStep(step) {
+            document.querySelectorAll(`[data-step="${step}"]`).forEach(el => {
+                el.classList.add('playing');
+            });
+        }
+        
+        function clearHighlight() {
+            document.querySelectorAll('.step.playing').forEach(el => {
+                el.classList.remove('playing');
+            });
+        }
+        
+        function updateStatus(message) {
+            status.textContent = message;
+        }
+        
+        window.addEventListener('load', init);
+        document.addEventListener('click', () => {
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+                updateStatus('✅ AudioContext activé !');
+            }
+        }, { once: true });
+    </script>
+</body>
+</html>
